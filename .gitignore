@@ -1,0 +1,21 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env
+.env.local
+.env.production
+
+# Yedek/geçici dosyalar
+src/components/AdminPanelModal_ORIGINAL_BACKUP.tsx
+src/components/AdminPanelModal_ENCODING_FIXED.tsx
+src/components/AdminPanelModal_CLEAN.tsx
+src/components/AdminPanelModal_FIXED.tsx
+
+# IDE
+.vscode/
+.idea/
+.antigravity/
+.aistudio/

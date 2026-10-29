@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #FAFAFA;
+  color: #1C1917;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: var(--font-serif);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a29e;
+}
+
+/* Print Styles for Florist Gift Card */
+@media print {
+  /* Hide the rest of the application */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Make only the printable gift card visible and positioned properly */
+  #printable-gift-card,
+  #printable-gift-card * {
+    visibility: visible !important;
+  }
+
+  #printable-gift-card {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 140mm !important;
+    min-height: 85mm !important;
+    max-width: 95vw !important;
+    margin: 0 !important;
+    padding: 12mm 14mm !important;
+    background: #ffffff !important;
+    color: #1c1917 !important;
+    border: 1px solid #d6d3d1 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    z-index: 999999 !important;
+  }
+
+  /* Hide print buttons and non-printable elements */
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+}
+
