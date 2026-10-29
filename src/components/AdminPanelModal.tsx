@@ -1410,6 +1410,20 @@ const [newProductIsFeatured, setNewProductIsFeatured] = useState(false);
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+
+                    {/* 1. ÖNCE RESİM YÜKLEME */}
+                    <div className="sm:col-span-2">
+                      <ImageFileInput
+                        label="Çiçek Görseli / Fotoğrafı"
+                        value={newProductImage}
+                        onChange={setNewProductImage}
+                        required
+                        helperText="Cihazınızdan veya galerinizden dosya seçin"
+                        id="new-product-file-picker"
+                      />
+                    </div>
+
+                    {/* 2. SONRA ÇİÇEK ADI */}
                     <div className="sm:col-span-2">
                       <label className="block font-semibold text-stone-700 mb-1">Çiçek Adı *</label>
                       <input
@@ -1602,17 +1616,6 @@ const [newProductIsFeatured, setNewProductIsFeatured] = useState(false);
                       <p className="text-[11px] text-purple-900/80 mt-1">
                         İşaretlendiğinde bu çiçek, hero bölümündeki <strong>"Özel Günlere Yakışan Başyapıtlar"</strong> premium vitrinde gösterilir.
                       </p>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <ImageFileInput
-                        label="Çiçek Görseli / Fotoğrafı"
-                        value={newProductImage}
-                        onChange={setNewProductImage}
-                        required
-                        helperText="Cihazınızdan veya galerinizden dosya seçin"
-                        id="new-product-file-picker"
-                      />
                     </div>
 
                     <div className="sm:col-span-2">
