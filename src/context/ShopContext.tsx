@@ -270,19 +270,16 @@ const INITIAL_ORDERS_SAMPLE: Order[] = [SAMPLE_SECOND_ORDER, SAMPLE_INITIAL_ORDE
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load products from localStorage or defaults
+  // NOT: INITIAL_PRODUCTS ile birleştirme (merge) yapılmıyor —
+  // yapılırsa admin panelinden silinen ürünler "eksik" sayılıp yeniden eklenir.
   const [products, setProducts] = useState<FlowerProduct[]>(() => {
     try {
       const saved = localStorage.getItem('velvet_rose_products') || localStorage.getItem('flora_izmir_products');
       if (saved) {
         const parsed: FlowerProduct[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missing = INITIAL_PRODUCTS.filter(p => !existingIds.has(p.id));
-        if (missing.length > 0) {
-          const merged = [...parsed, ...missing];
-          localStorage.setItem('velvet_rose_products', JSON.stringify(merged));
-          return merged;
+        if (parsed.length > 0) {
+          return parsed;
         }
-        return parsed;
       }
       return INITIAL_PRODUCTS;
     } catch {
