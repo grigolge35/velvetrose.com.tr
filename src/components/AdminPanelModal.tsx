@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Trash2, Edit3, Package, Gift, ShoppingBag, Truck, Check, RotateCcw, Tag, Percent, Sparkles, Flame, CreditCard, ShieldCheck, CheckCircle2, Building, RefreshCw, Key, Lock, ArrowRight, Sliders, Printer, Copy, Phone, MessageCircle, MapPin, ExternalLink, ChevronDown, ChevronUp, FileText, Search, UserCheck, Calendar, Clock, AlertTriangle, Eye, CheckCheck, Heart, Crown } from 'lucide-react';
 import { useShop, DEFAULT_PAYMENT_SETTINGS } from '../context/ShopContext';
 import { FlowerProduct, ExtraGift, OrderStatus, FlowerCategory, PaymentSettings, ActivePaymentGateway, Order } from '../types';
@@ -496,17 +496,6 @@ const [newProductIsFeatured, setNewProductIsFeatured] = useState(false);
             >
               <Lock className="w-3.5 h-3.5 text-rose-300" />
               <span className="hidden sm:inline">Güvenli Çıkış</span>
-            </button>
-            <button
-              onClick={() => {
-                if (confirm('Tüm ürünleri ve siparişleri varsayılan fabrika ayarlarına sıfırlamak istiyor musunuz?')) {
-                  resetToDefaults();
-                }
-              }}
-              className="p-1.5 text-stone-400 hover:text-white rounded-lg hover:bg-stone-800 transition-colors"
-              title="Varsayılanlara Sıfırla"
-            >
-              <RotateCcw className="w-4 h-4" />
             </button>
             <button
               onClick={() => setActiveModal('none')}
