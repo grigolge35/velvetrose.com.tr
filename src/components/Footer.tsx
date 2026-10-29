@@ -281,18 +281,32 @@ export const Footer: React.FC = () => {
           </a>
         </div>
 
-        {/* Bottom Bar: Clean copyright and unboxed metadata */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+        {/* Bottom Bar: Clean copyright, developer credit, and unboxed metadata */}
+        <div className="pt-8 border-t border-stone-800/80 mt-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-500">
           <div
             onClick={handleDiscreetAdminTrigger}
             onDoubleClick={() => setActiveModal('admin')}
-            className="cursor-default select-none transition-colors hover:text-stone-400"
+            className="cursor-default select-none transition-colors hover:text-stone-400 text-center md:text-left"
             title=""
           >
             © {new Date().getFullYear()} Velvet Rose (velvetrose.com.tr) · Tüm hakları saklıdır.
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="text-center">
+            <a
+              href="https://devstudioyazilim.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 group transition-all hover:scale-105"
+            >
+              <span className="text-stone-400 group-hover:text-stone-300">Site Tasarımı:</span>
+              <span className="font-extrabold tracking-wide bg-gradient-to-r from-pink-500 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent group-hover:brightness-125">
+                DEVSTUDIO YAZILIM
+              </span>
+            </a>
+          </div>
+
+          <div className="flex items-center gap-2 justify-center md:justify-end">
             <span>İzmir / Türkiye</span>
             <span aria-hidden="true">·</span>
             <span>velvetrose.com.tr</span>
