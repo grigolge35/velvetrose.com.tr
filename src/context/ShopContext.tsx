@@ -270,18 +270,27 @@ const INITIAL_ORDERS_SAMPLE: Order[] = [SAMPLE_SECOND_ORDER, SAMPLE_INITIAL_ORDE
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load products from localStorage or defaults
-  // NOT: INITIAL_PRODUCTS ile birleştirme (merge) yapılmıyor —
-  // yapılırsa admin panelinden silinen ürünler "eksik" sayılıp yeniden eklenir.
+  // Silinen ürün ID'leri 'velvet_rose_deleted_ids' key'inde saklanır.
+  // Bu sayede sayfa yenilendiğinde silinen ürünler INITIAL_PRODUCTS'tan geri gelmez.
   const [products, setProducts] = useState<FlowerProduct[]>(() => {
     try {
+      // Kalıcı olarak silinmiş ürün ID'leri
+      const deletedIdsRaw = localStorage.getItem('velvet_rose_deleted_ids');
+      const deletedIds: Set<string> = deletedIdsRaw
+        ? new Set(JSON.parse(deletedIdsRaw))
+        : new Set();
+
       const saved = localStorage.getItem('velvet_rose_products') || localStorage.getItem('flora_izmir_products');
       if (saved) {
         const parsed: FlowerProduct[] = JSON.parse(saved);
-        if (parsed.length > 0) {
-          return parsed;
+        // Silinmiş ürünleri dışarıda bırak
+        const filtered = parsed.filter(p => !deletedIds.has(p.id));
+        if (filtered.length > 0 || parsed.length > 0) {
+          return filtered;
         }
       }
-      return INITIAL_PRODUCTS;
+      // İlk açılış: INITIAL_PRODUCTS'tan silinenleri çıkar
+      return INITIAL_PRODUCTS.filter(p => !deletedIds.has(p.id));
     } catch {
       return INITIAL_PRODUCTS;
     }
@@ -656,7 +665,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+    // 1. React state'den kaldır
+    setProducts(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      // 2. Anında localStorage'a yaz (useEffect'i beklemeden)
+      localStorage.setItem('velvet_rose_products', JSON.stringify(updated));
+      return updated;
+    });
+    // 3. Silinmiş ID'ler listesine ekle — sayfa yenilemede geri gelmesin
+    try {
+      const raw = localStorage.getItem('velvet_rose_deleted_ids');
+      const deletedIds: string[] = raw ? JSON.parse(raw) : [];
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('velvet_rose_deleted_ids', JSON.stringify(deletedIds));
+      }
+    } catch { /* ignore */ }
   };
 
   const toggleProductCampaign = (productId: string) => {
@@ -733,6 +757,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('velvet_rose_orders');
     localStorage.removeItem('velvet_rose_payment_settings');
     localStorage.removeItem('velvet_rose_districts');
+    localStorage.removeItem('velvet_rose_deleted_ids'); // silinmiş ID listesini de temizle
     localStorage.removeItem('flora_izmir_products');
     localStorage.removeItem('flora_izmir_gifts');
     localStorage.removeItem('flora_izmir_orders');
