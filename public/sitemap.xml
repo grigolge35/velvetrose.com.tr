@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Ana Sayfa -->
+  <url>
+    <loc>https://velvetrose.com.tr/</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Ürün Koleksiyonu -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Ekstra Hediyeler -->
+  <url>
+    <loc>https://velvetrose.com.tr/#ekstra-hediyeler</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Çiçek Rehberi / Blog -->
+  <url>
+    <loc>https://velvetrose.com.tr/#cicek-rehberi</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Sipariş Takibi -->
+  <url>
+    <loc>https://velvetrose.com.tr/#siparis-takip</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Kategori Sayfaları -->
+
+  <!-- Doğum Günü Çiçekleri -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=dogum_gunu</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Aşk & Sevgiliye -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=ask_romantik</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Evlilik Yıldönümü -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=yildonumu</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Yeni İş & Tebrik -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=yeni_is</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Özel Tasarım & Çelenk -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=ozel_tasarim_celenk</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Geçmiş Olsun -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=gecmis_olsun</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Özür Dilerim & Barışma -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=ozur</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- İçimden Geldi -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=icimden_geldi</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Kampanya & İndirimli Ürünler -->
+  <url>
+    <loc>https://velvetrose.com.tr/#koleksiyon?kategori=kampanya</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>
