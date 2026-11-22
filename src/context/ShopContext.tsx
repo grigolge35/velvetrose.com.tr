@@ -5,7 +5,7 @@ import { INITIAL_EXTRA_GIFTS } from '../data/initialGifts';
 import { IZMIR_DISTRICTS } from '../data/izmirDistricts';
 import { db } from '../lib/firebase';
 import {
-  collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch
+  collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc
 } from 'firebase/firestore';
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
@@ -442,17 +442,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ─── FIRESTORE GERÇEK ZAMANLI SENKRONIZASYON ───────────────────────────────
   // Ürünler tüm cihazlarda eşitlenir.
+  // "meta/initialized" belgesi: Firestore'un ilk kurulumda bir kez seed edildiğini gösterir.
+  // Bu sayede admin tüm ürünleri silse bile uygulama yeniden ekleme yapmaz.
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'products'),
-      (snapshot) => {
+      async (snapshot) => {
         if (snapshot.empty) {
-          // İlk kullanım: Firestore boşsa başlangıç ürünlerini yükle
-          const batch = writeBatch(db);
-          INITIAL_PRODUCTS.forEach(product => {
-            batch.set(doc(db, 'products', product.id), product);
-          });
-          batch.commit().catch((err) => console.error('Firestore seed hatası:', err));
+          try {
+            // Firestore'da daha önce seed yapılmış mı kontrol et
+            const metaSnap = await getDoc(doc(db, 'meta', 'initialized'));
+            if (!metaSnap.exists()) {
+              // İlk kurulum: seed et ve meta bayrağını yaz
+              const batch = writeBatch(db);
+              INITIAL_PRODUCTS.forEach(product => {
+                batch.set(doc(db, 'products', product.id), product);
+              });
+              batch.set(doc(db, 'meta', 'initialized'), {
+                seededAt: new Date().toISOString(),
+                productCount: INITIAL_PRODUCTS.length
+              });
+              await batch.commit();
+            }
+            // Eğer meta zaten varsa ve ürünler boşsa: admin sildi, yeniden ekleme!
+          } catch (err) {
+            console.warn('Firestore meta kontrol hatası:', err);
+          }
         } else {
           // Firestore'daki ürünleri al ve state'i güncelle
           const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
@@ -472,13 +487,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onSnapshot(
       collection(db, 'extraGifts'),
-      (snapshot) => {
+      async (snapshot) => {
         if (snapshot.empty) {
-          const batch = writeBatch(db);
-          INITIAL_EXTRA_GIFTS.forEach(gift => {
-            batch.set(doc(db, 'extraGifts', gift.id), gift);
-          });
-          batch.commit().catch((err) => console.error('Firestore gifts seed hatası:', err));
+          try {
+            const metaSnap = await getDoc(doc(db, 'meta', 'giftsInitialized'));
+            if (!metaSnap.exists()) {
+              const batch = writeBatch(db);
+              INITIAL_EXTRA_GIFTS.forEach(gift => {
+                batch.set(doc(db, 'extraGifts', gift.id), gift);
+              });
+              batch.set(doc(db, 'meta', 'giftsInitialized'), {
+                seededAt: new Date().toISOString()
+              });
+              await batch.commit();
+            }
+          } catch (err) {
+            console.warn('Firestore gifts meta hatası:', err);
+          }
         } else {
           const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
           setExtraGifts(firestoreGifts);
