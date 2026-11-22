@@ -3,6 +3,10 @@ import { FlowerProduct, ExtraGift, CartItem, Order, SelectedGift, OrderStatus, A
 import { INITIAL_PRODUCTS } from '../data/initialProducts';
 import { INITIAL_EXTRA_GIFTS } from '../data/initialGifts';
 import { IZMIR_DISTRICTS } from '../data/izmirDistricts';
+import { db } from '../lib/firebase';
+import {
+  collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch
+} from 'firebase/firestore';
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   activeGateway: 'paytr',
@@ -269,31 +273,17 @@ const SAMPLE_SECOND_ORDER: Order = {
 const INITIAL_ORDERS_SAMPLE: Order[] = [SAMPLE_SECOND_ORDER, SAMPLE_INITIAL_ORDER];
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load products from localStorage or defaults
-  // Silinen ürün ID'leri 'velvet_rose_deleted_ids' key'inde saklanır.
-  // Bu sayede sayfa yenilendiğinde silinen ürünler INITIAL_PRODUCTS'tan geri gelmez.
+  // Ürünler: Firestore'dan gerçek zamanlı yüklenir.
+  // localStorage sadece Firestore yüklenene kadar geçici önbellek (cache) olarak kullanılır.
   const [products, setProducts] = useState<FlowerProduct[]>(() => {
     try {
-      // Kalıcı olarak silinmiş ürün ID'leri
-      const deletedIdsRaw = localStorage.getItem('velvet_rose_deleted_ids');
-      const deletedIds: Set<string> = deletedIdsRaw
-        ? new Set(JSON.parse(deletedIdsRaw))
-        : new Set();
-
       const saved = localStorage.getItem('velvet_rose_products') || localStorage.getItem('flora_izmir_products');
       if (saved) {
         const parsed: FlowerProduct[] = JSON.parse(saved);
-        // Silinmiş ürünleri dışarıda bırak
-        const filtered = parsed.filter(p => !deletedIds.has(p.id));
-        if (filtered.length > 0 || parsed.length > 0) {
-          return filtered;
-        }
+        if (parsed.length > 0) return parsed;
       }
-      // İlk açılış: INITIAL_PRODUCTS'tan silinenleri çıkar
-      return INITIAL_PRODUCTS.filter(p => !deletedIds.has(p.id));
-    } catch {
-      return INITIAL_PRODUCTS;
-    }
+    } catch { /* ignore */ }
+    return INITIAL_PRODUCTS;
   });
 
   // Load extra gifts
@@ -445,10 +435,63 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('velvet_rose_districts', JSON.stringify(fresh));
   };
 
-  // Sync to localStorage
+  // Sync to localStorage (offline cache)
   useEffect(() => {
     localStorage.setItem('velvet_rose_products', JSON.stringify(products));
   }, [products]);
+
+  // ─── FIRESTORE GERÇEK ZAMANLI SENKRONIZASYON ───────────────────────────────
+  // Ürünler tüm cihazlarda eşitlenir.
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        if (snapshot.empty) {
+          // İlk kullanım: Firestore boşsa başlangıç ürünlerini yükle
+          const batch = writeBatch(db);
+          INITIAL_PRODUCTS.forEach(product => {
+            batch.set(doc(db, 'products', product.id), product);
+          });
+          batch.commit().catch((err) => console.error('Firestore seed hatası:', err));
+        } else {
+          // Firestore'daki ürünleri al ve state'i güncelle
+          const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
+          setProducts(firestoreProducts);
+          localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
+        }
+      },
+      (error) => {
+        // Firestore erişilemezse localStorage önbelleği kullanılmaya devam eder
+        console.warn('Firestore bağlantı hatası - yerel önbellek kullanılıyor:', error.message);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  // Ekstra Hediyeler Firestore senkronizasyonu
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, 'extraGifts'),
+      (snapshot) => {
+        if (snapshot.empty) {
+          const batch = writeBatch(db);
+          INITIAL_EXTRA_GIFTS.forEach(gift => {
+            batch.set(doc(db, 'extraGifts', gift.id), gift);
+          });
+          batch.commit().catch((err) => console.error('Firestore gifts seed hatası:', err));
+        } else {
+          const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
+          setExtraGifts(firestoreGifts);
+          localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
+        }
+      },
+      (error) => {
+        console.warn('Firestore gifts bağlantı hatası:', error.message);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+  // ───────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     localStorage.setItem('velvet_rose_gifts', JSON.stringify(extraGifts));
@@ -655,95 +698,85 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // CRUD for Products
+  // CRUD for Products — her işlem hem state'i hem Firestore'u günceller
   const addProduct = (product: FlowerProduct) => {
-    setProducts(prev => [product, ...prev]);
+    setProducts(prev => [product, ...prev]); // anlık UI güncellemesi
+    setDoc(doc(db, 'products', product.id), product)
+      .catch(err => console.error('Ürün eklenirken Firestore hatası:', err));
   };
 
   const updateProduct = (product: FlowerProduct) => {
     setProducts(prev => prev.map(p => p.id === product.id ? product : p));
+    setDoc(doc(db, 'products', product.id), product)
+      .catch(err => console.error('Ürün güncellenirken Firestore hatası:', err));
   };
 
   const deleteProduct = (id: string) => {
-    // 1. React state'den kaldır
+    // 1. Anlık state güncellemesi (optimistic update)
     setProducts(prev => {
       const updated = prev.filter(p => p.id !== id);
-      // 2. Anında localStorage'a yaz (useEffect'i beklemeden)
       localStorage.setItem('velvet_rose_products', JSON.stringify(updated));
       return updated;
     });
-    // 3. Silinmiş ID'ler listesine ekle — sayfa yenilemede geri gelmesin
-    try {
-      const raw = localStorage.getItem('velvet_rose_deleted_ids');
-      const deletedIds: string[] = raw ? JSON.parse(raw) : [];
-      if (!deletedIds.includes(id)) {
-        deletedIds.push(id);
-        localStorage.setItem('velvet_rose_deleted_ids', JSON.stringify(deletedIds));
-      }
-    } catch { /* ignore */ }
+    // 2. Firestore'dan sil — tüm cihazlarda senkronize silinir
+    deleteDoc(doc(db, 'products', id))
+      .catch(err => console.error('Ürün silinirken Firestore hatası:', err));
   };
 
   const toggleProductCampaign = (productId: string) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== productId) return p;
-      if (p.hasCampaign) {
-        // Revert campaign: restore original regular price
-        const restoredPrice = p.originalPrice || p.oldPrice || p.price;
-        return {
-          ...p,
-          hasCampaign: false,
-          price: restoredPrice,
-          oldPrice: undefined,
-          originalPrice: undefined,
-          campaignDiscountPercent: undefined
-        };
-      } else {
-        // Activate campaign: apply 20% discount (%20 iskonto)
-        const basePrice = p.price;
-        const discounted = Math.round(basePrice * 0.8);
-        return {
-          ...p,
-          hasCampaign: true,
-          originalPrice: basePrice,
-          oldPrice: basePrice,
-          price: discounted,
-          campaignDiscountPercent: 20
-        };
-      }
-    }));
+    setProducts(prev => {
+      const updated = prev.map(p => {
+        if (p.id !== productId) return p;
+        if (p.hasCampaign) {
+          const restoredPrice = p.originalPrice || p.oldPrice || p.price;
+          return { ...p, hasCampaign: false, price: restoredPrice, oldPrice: undefined, originalPrice: undefined, campaignDiscountPercent: undefined };
+        } else {
+          const basePrice = p.price;
+          const discounted = Math.round(basePrice * 0.8);
+          return { ...p, hasCampaign: true, originalPrice: basePrice, oldPrice: basePrice, price: discounted, campaignDiscountPercent: 20 };
+        }
+      });
+      const changed = updated.find(p => p.id === productId);
+      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      return updated;
+    });
   };
 
   const toggleProductBestSeller = (productId: string) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== productId) return p;
-      return {
-        ...p,
-        isBestSeller: !p.isBestSeller
-      };
-    }));
+    setProducts(prev => {
+      const updated = prev.map(p => p.id !== productId ? p : { ...p, isBestSeller: !p.isBestSeller });
+      const changed = updated.find(p => p.id === productId);
+      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      return updated;
+    });
   };
 
   const toggleProductFeatured = (productId: string) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== productId) return p;
-      return {
-        ...p,
-        isFeatured: !p.isFeatured
-      };
-    }));
+    setProducts(prev => {
+      const updated = prev.map(p => p.id !== productId ? p : { ...p, isFeatured: !p.isFeatured });
+      const changed = updated.find(p => p.id === productId);
+      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      return updated;
+    });
   };
 
-  // CRUD for Extra Gifts
+  // CRUD for Extra Gifts — Firestore ile senkronize
   const addExtraGift = (gift: ExtraGift) => {
     setExtraGifts(prev => [gift, ...prev]);
+    setDoc(doc(db, 'extraGifts', gift.id), gift)
+      .catch(err => console.error('Hediye eklenirken Firestore hatası:', err));
   };
 
   const updateExtraGift = (gift: ExtraGift) => {
     setExtraGifts(prev => prev.map(g => g.id === gift.id ? gift : g));
+    setDoc(doc(db, 'extraGifts', gift.id), gift)
+      .catch(err => console.error('Hediye güncellenirken Firestore hatası:', err));
   };
 
   const deleteExtraGift = (id: string) => {
     setExtraGifts(prev => prev.filter(g => g.id !== id));
+    deleteDoc(doc(db, 'extraGifts', id))
+      .catch(err => console.error('Hediye silinirken Firestore hatası:', err));
   };
 
   const resetToDefaults = () => {
