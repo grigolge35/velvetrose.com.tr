@@ -14,6 +14,8 @@ const app = initializeApp(firebaseConfig);
 
 // IndexedDB önbelleğini KAPAT — silinmiş ürünlerin önbellekten geri gelmesini önler
 // memoryLocalCache: sadece bellekte tutar, sekme kapanınca temizlenir
+// ignoreUndefinedProperties: undefined alanlar yüzünden setDoc'un çökmesini önler
 export const db = initializeFirestore(app, {
-  localCache: memoryLocalCache()
+  localCache: memoryLocalCache(),
+  ignoreUndefinedProperties: true
 });

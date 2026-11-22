@@ -8,6 +8,11 @@ import {
   collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc, getDocs
 } from 'firebase/firestore';
 
+// Firestore'a veri yazarken undefined olan alanları otomatik temizleyen yardımcı
+const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
+  return JSON.parse(JSON.stringify(obj));
+};
+
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   activeGateway: 'paytr',
   paytr: {
@@ -441,54 +446,59 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [products]);
 
   // ─── FIRESTORE GERÇEK ZAMANLI SENKRONIZASYON ───────────────────────────────
-  // Modül düzeyinde flag — aynı sekme içinde çift init engellemek için
   useEffect(() => {
-    let unsubProducts: (() => void) | null = null;
-    let unsubGifts: (() => void) | null = null;
     let cancelled = false;
 
-    const initAndSubscribe = async () => {
+    // 1. Ürünleri ANINDA gerçek zamanlı dinlemeye başla (getDoc beklemeden!)
+    const unsubProducts = onSnapshot(
+      collection(db, 'products'),
+      (snapshot) => {
+        if (cancelled) return;
+        const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
+        setProducts(firestoreProducts);
+        try {
+          localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
+        } catch { /* ignore quota */ }
+      },
+      (err) => console.warn('Firestore ürünler hatası:', err.message)
+    );
+
+    // 2. Ekstra Hediyeleri ANINDA gerçek zamanlı dinlemeye başla
+    const unsubGifts = onSnapshot(
+      collection(db, 'extraGifts'),
+      (snapshot) => {
+        if (cancelled) return;
+        const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
+        setExtraGifts(firestoreGifts);
+        try {
+          localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
+        } catch { /* ignore quota */ }
+      },
+      (err) => console.warn('Firestore hediyeler hatası:', err.message)
+    );
+
+    // 3. Arka planda ilk kurulum kontrolü (yalnızca meta yoksa ve koleksiyon tamamen boşsa seed et)
+    const checkInitialSeed = async () => {
       try {
-        // ── Ürünler: meta/initialized kontrolü ──────────────────────────────
         const metaSnap = await getDoc(doc(db, 'meta', 'initialized'));
         if (cancelled) return;
 
         if (!metaSnap.exists()) {
-          // Sadece meta yoksa ve products da gerçekten boşsa seed et
           const productsSnap = await getDocs(collection(db, 'products'));
           if (cancelled) return;
 
           if (productsSnap.empty) {
-            // İlk kurulum: seed et
             const batch = writeBatch(db);
-            INITIAL_PRODUCTS.forEach(p => batch.set(doc(db, 'products', p.id), p));
+            INITIAL_PRODUCTS.forEach(p => batch.set(doc(db, 'products', p.id), cleanForFirestore(p)));
             await batch.commit();
             if (cancelled) return;
           }
-          // Meta'yı yaz — bir daha seed yapılmasın
           await setDoc(doc(db, 'meta', 'initialized'), {
             seededAt: new Date().toISOString(),
             version: 1
           });
-          if (cancelled) return;
         }
-        // meta varsa → hiçbir şey seed etme, direkt dinle
 
-        // ── Ürünler: Gerçek zamanlı dinle ────────────────────────────────────
-        unsubProducts = onSnapshot(
-          collection(db, 'products'),
-          (snapshot) => {
-            if (cancelled) return;
-            const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
-            // Firestore'dan gelen veri ne olursa olsun (boş bile) state'i güncelle
-            setProducts(firestoreProducts);
-            // localStorage'ı Firestore ile senkronize tut
-            localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
-          },
-          (err) => console.warn('Firestore ürünler hatası:', err.message)
-        );
-
-        // ── Ekstra Hediyeler: meta/giftsInitialized kontrolü ─────────────────
         const giftsMeta = await getDoc(doc(db, 'meta', 'giftsInitialized'));
         if (cancelled) return;
 
@@ -498,40 +508,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (giftsSnap.empty) {
             const batch = writeBatch(db);
-            INITIAL_EXTRA_GIFTS.forEach(g => batch.set(doc(db, 'extraGifts', g.id), g));
+            INITIAL_EXTRA_GIFTS.forEach(g => batch.set(doc(db, 'extraGifts', g.id), cleanForFirestore(g)));
             await batch.commit();
             if (cancelled) return;
           }
           await setDoc(doc(db, 'meta', 'giftsInitialized'), {
             seededAt: new Date().toISOString()
           });
-          if (cancelled) return;
         }
-
-        // ── Ekstra Hediyeler: Gerçek zamanlı dinle ───────────────────────────
-        unsubGifts = onSnapshot(
-          collection(db, 'extraGifts'),
-          (snapshot) => {
-            if (cancelled) return;
-            const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
-            setExtraGifts(firestoreGifts);
-            localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
-          },
-          (err) => console.warn('Firestore hediyeler hatası:', err.message)
-        );
       } catch (err) {
-        if (!cancelled) {
-          console.warn('Firestore bağlantı hatası - yerel önbellek aktif:', err);
-        }
+        if (!cancelled) console.warn('Firestore seed kontrol hatası:', err);
       }
     };
 
-    initAndSubscribe();
+    checkInitialSeed();
 
     return () => {
       cancelled = true;
-      if (unsubProducts) unsubProducts();
-      if (unsubGifts) unsubGifts();
+      unsubProducts();
+      unsubGifts();
     };
   }, []);
   // ─────────────────────────────────────────────────────────────────────────
@@ -741,27 +736,29 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // CRUD for Products — her işlem hem state'i hem Firestore'u günceller
+  // CRUD for Products — her işlem hem UI state'i hem Firestore'u günceller
   const addProduct = (product: FlowerProduct) => {
-    setProducts(prev => [product, ...prev]); // anlık UI güncellemesi
-    setDoc(doc(db, 'products', product.id), product)
+    const clean = cleanForFirestore(product);
+    setProducts(prev => [clean, ...prev]);
+    setDoc(doc(db, 'products', clean.id), clean)
       .catch(err => console.error('Ürün eklenirken Firestore hatası:', err));
   };
 
   const updateProduct = (product: FlowerProduct) => {
-    setProducts(prev => prev.map(p => p.id === product.id ? product : p));
-    setDoc(doc(db, 'products', product.id), product)
+    const clean = cleanForFirestore(product);
+    setProducts(prev => prev.map(p => p.id === clean.id ? clean : p));
+    setDoc(doc(db, 'products', clean.id), clean)
       .catch(err => console.error('Ürün güncellenirken Firestore hatası:', err));
   };
 
   const deleteProduct = (id: string) => {
-    // 1. Anlık state güncellemesi (optimistic update)
     setProducts(prev => {
       const updated = prev.filter(p => p.id !== id);
-      localStorage.setItem('velvet_rose_products', JSON.stringify(updated));
+      try {
+        localStorage.setItem('velvet_rose_products', JSON.stringify(updated));
+      } catch { /* ignore */ }
       return updated;
     });
-    // 2. Firestore'dan sil — tüm cihazlarda senkronize silinir
     deleteDoc(doc(db, 'products', id))
       .catch(err => console.error('Ürün silinirken Firestore hatası:', err));
   };
@@ -780,7 +777,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
       const changed = updated.find(p => p.id === productId);
-      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      if (changed) {
+        setDoc(doc(db, 'products', productId), cleanForFirestore(changed)).catch(console.error);
+      }
       return updated;
     });
   };
@@ -789,7 +788,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProducts(prev => {
       const updated = prev.map(p => p.id !== productId ? p : { ...p, isBestSeller: !p.isBestSeller });
       const changed = updated.find(p => p.id === productId);
-      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      if (changed) {
+        setDoc(doc(db, 'products', productId), cleanForFirestore(changed)).catch(console.error);
+      }
       return updated;
     });
   };
@@ -798,26 +799,36 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProducts(prev => {
       const updated = prev.map(p => p.id !== productId ? p : { ...p, isFeatured: !p.isFeatured });
       const changed = updated.find(p => p.id === productId);
-      if (changed) setDoc(doc(db, 'products', productId), changed).catch(console.error);
+      if (changed) {
+        setDoc(doc(db, 'products', productId), cleanForFirestore(changed)).catch(console.error);
+      }
       return updated;
     });
   };
 
   // CRUD for Extra Gifts — Firestore ile senkronize
   const addExtraGift = (gift: ExtraGift) => {
-    setExtraGifts(prev => [gift, ...prev]);
-    setDoc(doc(db, 'extraGifts', gift.id), gift)
+    const clean = cleanForFirestore(gift);
+    setExtraGifts(prev => [clean, ...prev]);
+    setDoc(doc(db, 'extraGifts', clean.id), clean)
       .catch(err => console.error('Hediye eklenirken Firestore hatası:', err));
   };
 
   const updateExtraGift = (gift: ExtraGift) => {
-    setExtraGifts(prev => prev.map(g => g.id === gift.id ? gift : g));
-    setDoc(doc(db, 'extraGifts', gift.id), gift)
+    const clean = cleanForFirestore(gift);
+    setExtraGifts(prev => prev.map(g => g.id === clean.id ? clean : g));
+    setDoc(doc(db, 'extraGifts', clean.id), clean)
       .catch(err => console.error('Hediye güncellenirken Firestore hatası:', err));
   };
 
   const deleteExtraGift = (id: string) => {
-    setExtraGifts(prev => prev.filter(g => g.id !== id));
+    setExtraGifts(prev => {
+      const updated = prev.filter(g => g.id !== id);
+      try {
+        localStorage.setItem('velvet_rose_gifts', JSON.stringify(updated));
+      } catch { /* ignore */ }
+      return updated;
+    });
     deleteDoc(doc(db, 'extraGifts', id))
       .catch(err => console.error('Hediye silinirken Firestore hatası:', err));
   };

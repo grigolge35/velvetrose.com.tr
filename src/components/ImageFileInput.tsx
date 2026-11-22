@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Upload, Trash2, RefreshCw, CheckCircle2, Camera, Cloud, AlertCircle } from 'lucide-react';
 
-// Imgbb API key - set VITE_IMGBB_API_KEY in .env file
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY as string | undefined;
+// Imgbb API key - set VITE_IMGBB_API_KEY in .env file (varsayılan API anahtarı fallback olarak ekli)
+const IMGBB_API_KEY = (import.meta.env.VITE_IMGBB_API_KEY as string | undefined) || '75747ff0eab4d5c0d8309ec1543d1075';
 
 interface ImageFileInputProps {
   label: string;
