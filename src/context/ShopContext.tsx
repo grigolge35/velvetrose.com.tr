@@ -441,58 +441,78 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [products]);
 
   // ─── FIRESTORE GERÇEK ZAMANLI SENKRONIZASYON ───────────────────────────────
-  // Seeding ve listening ayrı tutulur — race condition yok.
+  // Modül düzeyinde flag — aynı sekme içinde çift init engellemek için
   useEffect(() => {
     let unsubProducts: (() => void) | null = null;
     let unsubGifts: (() => void) | null = null;
+    let cancelled = false;
 
     const initAndSubscribe = async () => {
       try {
-        // ── Ürünler: Firestore'u başlat ──────────────────────────────────────
+        // ── Ürünler: meta/initialized kontrolü ──────────────────────────────
         const metaSnap = await getDoc(doc(db, 'meta', 'initialized'));
+        if (cancelled) return;
+
         if (!metaSnap.exists()) {
-          // İlk kurulum: products koleksiyonu boşsa seed et
+          // Sadece meta yoksa ve products da gerçekten boşsa seed et
           const productsSnap = await getDocs(collection(db, 'products'));
+          if (cancelled) return;
+
           if (productsSnap.empty) {
+            // İlk kurulum: seed et
             const batch = writeBatch(db);
             INITIAL_PRODUCTS.forEach(p => batch.set(doc(db, 'products', p.id), p));
             await batch.commit();
+            if (cancelled) return;
           }
+          // Meta'yı yaz — bir daha seed yapılmasın
           await setDoc(doc(db, 'meta', 'initialized'), {
             seededAt: new Date().toISOString(),
             version: 1
           });
+          if (cancelled) return;
         }
+        // meta varsa → hiçbir şey seed etme, direkt dinle
 
-        // ── Ürünler: Gerçek zamanlı dinle (seeding bittikten sonra) ──────────
+        // ── Ürünler: Gerçek zamanlı dinle ────────────────────────────────────
         unsubProducts = onSnapshot(
           collection(db, 'products'),
           (snapshot) => {
+            if (cancelled) return;
             const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
+            // Firestore'dan gelen veri ne olursa olsun (boş bile) state'i güncelle
             setProducts(firestoreProducts);
+            // localStorage'ı Firestore ile senkronize tut
             localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
           },
           (err) => console.warn('Firestore ürünler hatası:', err.message)
         );
 
-        // ── Ekstra Hediyeler: Firestore'u başlat ─────────────────────────────
+        // ── Ekstra Hediyeler: meta/giftsInitialized kontrolü ─────────────────
         const giftsMeta = await getDoc(doc(db, 'meta', 'giftsInitialized'));
+        if (cancelled) return;
+
         if (!giftsMeta.exists()) {
           const giftsSnap = await getDocs(collection(db, 'extraGifts'));
+          if (cancelled) return;
+
           if (giftsSnap.empty) {
             const batch = writeBatch(db);
             INITIAL_EXTRA_GIFTS.forEach(g => batch.set(doc(db, 'extraGifts', g.id), g));
             await batch.commit();
+            if (cancelled) return;
           }
           await setDoc(doc(db, 'meta', 'giftsInitialized'), {
             seededAt: new Date().toISOString()
           });
+          if (cancelled) return;
         }
 
         // ── Ekstra Hediyeler: Gerçek zamanlı dinle ───────────────────────────
         unsubGifts = onSnapshot(
           collection(db, 'extraGifts'),
           (snapshot) => {
+            if (cancelled) return;
             const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
             setExtraGifts(firestoreGifts);
             localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
@@ -500,14 +520,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (err) => console.warn('Firestore hediyeler hatası:', err.message)
         );
       } catch (err) {
-        // Firestore erişilemezse localStorage önbelleği kullanılmaya devam eder
-        console.warn('Firestore bağlantı hatası - yerel önbellek aktif:', err);
+        if (!cancelled) {
+          console.warn('Firestore bağlantı hatası - yerel önbellek aktif:', err);
+        }
       }
     };
 
     initAndSubscribe();
 
     return () => {
+      cancelled = true;
       if (unsubProducts) unsubProducts();
       if (unsubGifts) unsubGifts();
     };
