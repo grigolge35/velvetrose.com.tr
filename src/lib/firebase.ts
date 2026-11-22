@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBuVjykdvsqxHdgvbJtr0-9CPpwanWDkKA",
@@ -11,4 +11,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+// IndexedDB önbelleğini KAPAT — silinmiş ürünlerin önbellekten geri gelmesini önler
+// memoryLocalCache: sadece bellekte tutar, sekme kapanınca temizlenir
+export const db = initializeFirestore(app, {
+  localCache: memoryLocalCache()
+});
