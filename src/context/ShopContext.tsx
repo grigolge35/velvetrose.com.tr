@@ -5,7 +5,7 @@ import { INITIAL_EXTRA_GIFTS } from '../data/initialGifts';
 import { IZMIR_DISTRICTS } from '../data/izmirDistricts';
 import { db } from '../lib/firebase';
 import {
-  collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc
+  collection, doc, setDoc, deleteDoc, onSnapshot, writeBatch, getDoc, getDocs
 } from 'firebase/firestore';
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
@@ -441,82 +441,78 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [products]);
 
   // ─── FIRESTORE GERÇEK ZAMANLI SENKRONIZASYON ───────────────────────────────
-  // Ürünler tüm cihazlarda eşitlenir.
-  // "meta/initialized" belgesi: Firestore'un ilk kurulumda bir kez seed edildiğini gösterir.
-  // Bu sayede admin tüm ürünleri silse bile uygulama yeniden ekleme yapmaz.
+  // Seeding ve listening ayrı tutulur — race condition yok.
   useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'products'),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            // Firestore'da daha önce seed yapılmış mı kontrol et
-            const metaSnap = await getDoc(doc(db, 'meta', 'initialized'));
-            if (!metaSnap.exists()) {
-              // İlk kurulum: seed et ve meta bayrağını yaz
-              const batch = writeBatch(db);
-              INITIAL_PRODUCTS.forEach(product => {
-                batch.set(doc(db, 'products', product.id), product);
-              });
-              batch.set(doc(db, 'meta', 'initialized'), {
-                seededAt: new Date().toISOString(),
-                productCount: INITIAL_PRODUCTS.length
-              });
-              await batch.commit();
-            }
-            // Eğer meta zaten varsa ve ürünler boşsa: admin sildi, yeniden ekleme!
-          } catch (err) {
-            console.warn('Firestore meta kontrol hatası:', err);
-          }
-        } else {
-          // Firestore'daki ürünleri al ve state'i güncelle
-          const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
-          setProducts(firestoreProducts);
-          localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
-        }
-      },
-      (error) => {
-        // Firestore erişilemezse localStorage önbelleği kullanılmaya devam eder
-        console.warn('Firestore bağlantı hatası - yerel önbellek kullanılıyor:', error.message);
-      }
-    );
-    return () => unsubscribe();
-  }, []);
+    let unsubProducts: (() => void) | null = null;
+    let unsubGifts: (() => void) | null = null;
 
-  // Ekstra Hediyeler Firestore senkronizasyonu
-  useEffect(() => {
-    const unsubscribe = onSnapshot(
-      collection(db, 'extraGifts'),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            const metaSnap = await getDoc(doc(db, 'meta', 'giftsInitialized'));
-            if (!metaSnap.exists()) {
-              const batch = writeBatch(db);
-              INITIAL_EXTRA_GIFTS.forEach(gift => {
-                batch.set(doc(db, 'extraGifts', gift.id), gift);
-              });
-              batch.set(doc(db, 'meta', 'giftsInitialized'), {
-                seededAt: new Date().toISOString()
-              });
-              await batch.commit();
-            }
-          } catch (err) {
-            console.warn('Firestore gifts meta hatası:', err);
+    const initAndSubscribe = async () => {
+      try {
+        // ── Ürünler: Firestore'u başlat ──────────────────────────────────────
+        const metaSnap = await getDoc(doc(db, 'meta', 'initialized'));
+        if (!metaSnap.exists()) {
+          // İlk kurulum: products koleksiyonu boşsa seed et
+          const productsSnap = await getDocs(collection(db, 'products'));
+          if (productsSnap.empty) {
+            const batch = writeBatch(db);
+            INITIAL_PRODUCTS.forEach(p => batch.set(doc(db, 'products', p.id), p));
+            await batch.commit();
           }
-        } else {
-          const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
-          setExtraGifts(firestoreGifts);
-          localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
+          await setDoc(doc(db, 'meta', 'initialized'), {
+            seededAt: new Date().toISOString(),
+            version: 1
+          });
         }
-      },
-      (error) => {
-        console.warn('Firestore gifts bağlantı hatası:', error.message);
+
+        // ── Ürünler: Gerçek zamanlı dinle (seeding bittikten sonra) ──────────
+        unsubProducts = onSnapshot(
+          collection(db, 'products'),
+          (snapshot) => {
+            const firestoreProducts = snapshot.docs.map(d => d.data() as FlowerProduct);
+            setProducts(firestoreProducts);
+            localStorage.setItem('velvet_rose_products', JSON.stringify(firestoreProducts));
+          },
+          (err) => console.warn('Firestore ürünler hatası:', err.message)
+        );
+
+        // ── Ekstra Hediyeler: Firestore'u başlat ─────────────────────────────
+        const giftsMeta = await getDoc(doc(db, 'meta', 'giftsInitialized'));
+        if (!giftsMeta.exists()) {
+          const giftsSnap = await getDocs(collection(db, 'extraGifts'));
+          if (giftsSnap.empty) {
+            const batch = writeBatch(db);
+            INITIAL_EXTRA_GIFTS.forEach(g => batch.set(doc(db, 'extraGifts', g.id), g));
+            await batch.commit();
+          }
+          await setDoc(doc(db, 'meta', 'giftsInitialized'), {
+            seededAt: new Date().toISOString()
+          });
+        }
+
+        // ── Ekstra Hediyeler: Gerçek zamanlı dinle ───────────────────────────
+        unsubGifts = onSnapshot(
+          collection(db, 'extraGifts'),
+          (snapshot) => {
+            const firestoreGifts = snapshot.docs.map(d => d.data() as ExtraGift);
+            setExtraGifts(firestoreGifts);
+            localStorage.setItem('velvet_rose_gifts', JSON.stringify(firestoreGifts));
+          },
+          (err) => console.warn('Firestore hediyeler hatası:', err.message)
+        );
+      } catch (err) {
+        // Firestore erişilemezse localStorage önbelleği kullanılmaya devam eder
+        console.warn('Firestore bağlantı hatası - yerel önbellek aktif:', err);
       }
-    );
-    return () => unsubscribe();
+    };
+
+    initAndSubscribe();
+
+    return () => {
+      if (unsubProducts) unsubProducts();
+      if (unsubGifts) unsubGifts();
+    };
   }, []);
-  // ───────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     localStorage.setItem('velvet_rose_gifts', JSON.stringify(extraGifts));
