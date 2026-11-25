@@ -58,7 +58,7 @@ export const SEO_ARTICLES: Article[] = [
       'yıldönümü gül buketi',
       'orkide ne anlama gelir'
     ],
-    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.pexels.com/photos/30742308/pexels-photo-30742308.jpeg?auto=compress&cs=tinysrgb&w=800',
     content: [
       'Çiçekler kelimelerin yetersiz kaldığı anlarda en derin duyguların elçisidir. Yıldönümü ve romantik anlarda 51 veya 101 adet Ekvador kırmızı gülü koşulsuz aşk ve tutkunun simgesidir.',
       'Yeni bir iş tebriği, doktora tezi savunması veya prestijli bir kutlama için çift dallı beyaz Phalaenopsis orkide asalet ve saygının vazgeçilmezidir. Saksıda olması nedeniyle alıcısının masasında aylarca yaşayacak kalıcı bir hatıradır.',
