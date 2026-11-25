@@ -9,6 +9,9 @@ import { SafeImage } from './SafeImage';
 export const SeoArticlesSection: React.FC = () => {
   const { setSelectedArticle, setActiveModal, activeDistricts, setSelectedDistrictFilter } = useShop();
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [showAllArticles, setShowAllArticles] = useState(false);
+
+  const displayedArticles = showAllArticles ? SEO_ARTICLES : SEO_ARTICLES.slice(0, 6);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -39,7 +42,7 @@ export const SeoArticlesSection: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {SEO_ARTICLES.map((article) => (
+            {displayedArticles.map((article) => (
               <article
                 key={article.id}
                 onClick={() => handleReadArticle(article)}
@@ -90,6 +93,24 @@ export const SeoArticlesSection: React.FC = () => {
               </article>
             ))}
           </div>
+
+          {SEO_ARTICLES.length > 6 && (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAllArticles((prev) => !prev)}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-white hover:bg-rose-50 text-stone-800 hover:text-rose-800 border border-stone-300 hover:border-rose-300 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-rose-600" />
+                <span>
+                  {showAllArticles
+                    ? 'Daha Az Rehber Göster'
+                    : `Tüm Çiçek Bakım Rehberlerini Gör (${SEO_ARTICLES.length} Makale)`}
+                </span>
+                {showAllArticles ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* PART 2: IZMIR DISTRICTS COVERAGE MATRIX (DİNAMİK TESLİMAT AĞI) */}
