@@ -344,7 +344,7 @@ export const SEO_ARTICLES: Article[] = [
       'kalıcı çiçek hediyesi',
       'mavi gül anlamı'
     ],
-    image: 'https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.pexels.com/photos/7030188/pexels-photo-7030188.jpeg?auto=compress&cs=tinysrgb&w=800',
     content: [
       'Solmayan güller plastik veya yapay değildir; en taze ve görkemli anında dalından kesilen gerçek Ekvador güllerinin öz suyunun özel bitkisel gliserin ve doğal pigmentlerle değiştirilmesi (şoklanması) sonucu elde edilir. Bu sayede dokusu ve formu 2 ila 5 yıl boyunca ilk günkü gibi kalır.',
       'Solmayan güllerin bakımında en kritik kural: Kesinlikle su verilmez! Su veya yüksek nem, şoklanmış taç yaprakların dokusunu bozabilir. Ayrıca doğrudan yakıcı güneş ışığı altında bırakmak renginin zamanla açılmasına neden olabilir.',
@@ -454,7 +454,7 @@ export const SEO_ARTICLES: Article[] = [
       'tebrik çiçeği notu',
       'kart mesajı'
     ],
-    image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.pexels.com/photos/7985444/pexels-photo-7985444.jpeg?auto=compress&cs=tinysrgb&w=800',
     content: [
       'En güzel buketi tamamlayan unsur, içine eklenen içten bir kart notudur. Uzun paragraflar yerine doğrudan kalbe dokunan, 2-3 cümlelik samimi ifadeler çok daha akılda kalıcıdır.',
       'Sevgiliye gönderimde "Gözlerinin değdiği her yer çiçek açıyor, hayatımın en güzel baharısın" gibi kişisel bir cümle; anneye gönderimde "Varlığınla hayatımıza hep bahar getirdin, iyi ki varsın" mesajı sıcak bir gülümseme yaratır.',
