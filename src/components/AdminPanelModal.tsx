@@ -2775,7 +2775,7 @@ const [newProductIsFeatured, setNewProductIsFeatured] = useState(false);
                     className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Tüm İlçeleri Aktif Et (30 İlçe)</span>
+                    <span>Tüm İlçeleri Aktif Et ({districts.length} İlçe)</span>
                   </button>
 
                   <button
