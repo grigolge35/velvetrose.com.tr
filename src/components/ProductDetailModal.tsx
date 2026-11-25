@@ -144,35 +144,9 @@ export const ProductDetailModal: React.FC = () => {
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-6">
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-6 whitespace-pre-line">
                 {product.description}
               </p>
-
-              {/* Specifications Strip */}
-              <div className="bg-stone-50 rounded-xl p-3.5 border border-stone-200/80 space-y-2 text-xs text-stone-700 mb-6">
-                {product.stemCount && (
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Çiçek / Dal Sayısı:</span>
-                    <span className="font-semibold">{product.stemCount} Dal Taze Çiçek</span>
-                  </div>
-                )}
-                {product.height && (
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">Yaklaşık Boyut:</span>
-                    <span className="font-semibold">{product.height}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Vazo Durumu:</span>
-                  <span className="font-semibold">
-                    {product.vaseIncluded ? 'Özel Vazo Dahil' : 'Lüks Mat Ambalaj Kağıdında'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-500">Teslimat Şekli:</span>
-                  <span className="font-semibold text-rose-800">Klimalı Kendi Kuryemizle</span>
-                </div>
-              </div>
 
               {/* Freshness & Design Guarantee Note */}
               <div className="flex items-start gap-2.5 text-xs text-stone-500 mb-6">
