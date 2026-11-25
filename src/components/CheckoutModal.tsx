@@ -100,10 +100,12 @@ export const CheckoutModal: React.FC = () => {
   const [installment, setInstallment] = useState<number>(1);
   const [copiedIban, setCopiedIban] = useState<boolean>(false);
 
-  // 3D Secure Simulation Modal
+  // 3D Secure Simulation Modal (Ziraat POS fallback) & PayTR iFrame
   const [show3DSecureModal, setShow3DSecureModal] = useState<boolean>(false);
   const [smsCode, setSmsCode] = useState<string>('842910');
   const [isProcessing3D, setIsProcessing3D] = useState<boolean>(false);
+  const [paytrToken, setPaytrToken] = useState<string | null>(null);
+  const [isLoadingPaytr, setIsLoadingPaytr] = useState<boolean>(false);
 
   // Step wizard
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -165,47 +167,50 @@ export const CheckoutModal: React.FC = () => {
     }
   };
 
+  const buildOrderPayload = () => ({
+    items: cart,
+    totalAmount: grandTotal,
+    recipient: {
+      name: recipientName.trim(),
+      phone: recipientPhone.trim(),
+      relationship
+    },
+    sender: {
+      name: senderName.trim(),
+      phone: senderPhone.trim(),
+      email: senderEmail.trim(),
+      isAnonymous
+    },
+    deliveryAddress: {
+      city: 'İzmir' as const,
+      district: currentDistrict.name,
+      neighborhood: selectedNeighborhood,
+      streetAddress: streetAddress.trim(),
+      buildingNo: buildingNo.trim(),
+      apartmentNo: apartmentNo.trim(),
+      addressDescription: addressDescription.trim()
+    },
+    deliveryDate,
+    deliveryTimeSlot,
+    cardNote: cardNote.trim(),
+    cardSenderName: cardSenderName.trim() || (isAnonymous ? 'Gizli Hayran' : senderName.trim()),
+    cardTheme,
+    paymentMethod,
+    paymentGateway: paymentMethod === 'credit_card' ? paymentSettings.activeGateway : undefined,
+    installment: paymentMethod === 'credit_card' ? installment : undefined
+  });
+
   const executeFinalOrder = () => {
-    placeOrder({
-      items: cart,
-      totalAmount: grandTotal,
-      recipient: {
-        name: recipientName.trim(),
-        phone: recipientPhone.trim(),
-        relationship
-      },
-      sender: {
-        name: senderName.trim(),
-        phone: senderPhone.trim(),
-        email: senderEmail.trim(),
-        isAnonymous
-      },
-      deliveryAddress: {
-        city: 'İzmir',
-        district: currentDistrict.name,
-        neighborhood: selectedNeighborhood,
-        streetAddress: streetAddress.trim(),
-        buildingNo: buildingNo.trim(),
-        apartmentNo: apartmentNo.trim(),
-        addressDescription: addressDescription.trim()
-      },
-      deliveryDate,
-      deliveryTimeSlot,
-      cardNote: cardNote.trim(),
-      cardSenderName: cardSenderName.trim() || (isAnonymous ? 'Gizli Hayran' : senderName.trim()),
-      cardTheme,
-      paymentMethod,
-      paymentGateway: paymentMethod === 'credit_card' ? paymentSettings.activeGateway : undefined,
-      installment: paymentMethod === 'credit_card' ? installment : undefined
-    });
+    placeOrder(buildOrderPayload());
 
     // Reset local wizard state
     setShow3DSecureModal(false);
+    setPaytrToken(null);
     setIsProcessing3D(false);
     setCurrentStep(1);
   };
 
-  const handleSubmitOrder = (e: React.FormEvent) => {
+  const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
@@ -215,7 +220,72 @@ export const CheckoutModal: React.FC = () => {
     }
 
     if (paymentMethod === 'credit_card') {
-      // Light validation: if user typed something incomplete
+      // PayTR aktifse gerçek PayTR iFrame token al ve güvenli ödeme penceresini aç
+      if (paymentSettings.activeGateway === 'paytr') {
+        setIsLoadingPaytr(true);
+        try {
+          const orderPayload = buildOrderPayload();
+          const merchantOid = `VR${Date.now()}`;
+
+          try {
+            localStorage.setItem('velvet_pending_paytr_order', JSON.stringify({
+              merchantOid,
+              orderData: orderPayload,
+              createdAt: Date.now()
+            }));
+          } catch { /* ignore storage error */ }
+
+          const basketItems = cart.map(item => {
+            const giftsUnitPrice = item.selectedGifts.reduce((sum, g) => sum + g.gift.price * g.quantity, 0);
+            return {
+              name: item.product.name,
+              price: item.product.price + giftsUnitPrice,
+              quantity: item.quantity
+            };
+          });
+
+          if (deliveryFee > 0) {
+            basketItems.push({
+              name: `Teslimat Ücreti (${currentDistrict.name})`,
+              price: deliveryFee,
+              quantity: 1
+            });
+          }
+
+          const response = await fetch('/api/paytr-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              merchantOid,
+              email: senderEmail.trim() || 'musteri@velvetrose.com.tr',
+              totalAmount: grandTotal,
+              basketItems,
+              userName: senderName.trim() || 'Velvet Rose Müşteri',
+              userAddress: `${currentDistrict.name} ${selectedNeighborhood} ${streetAddress} No:${buildingNo} D:${apartmentNo} İzmir`,
+              userPhone: senderPhone.trim() || '05000000000',
+              noInstallment: paymentSettings.paytr.installmentEnabled ? 0 : 1,
+              maxInstallment: paymentSettings.paytr.maxInstallments || 6,
+              testMode: paymentSettings.paytr.testMode,
+              origin: window.location.origin
+            })
+          });
+
+          const data = await response.json();
+          if (data.status === 'success' && data.token) {
+            setPaytrToken(data.token);
+          } else {
+            setFormError(data.reason || 'PayTR ödeme penceresi başlatılamadı. Lütfen mağaza ayarlarını kontrol edin.');
+          }
+        } catch (err) {
+          setFormError('Ödeme sunucusuna bağlanırken bir hata oluştu. Lütfen tekrar deneyin.');
+          console.error('PayTR token hatası:', err);
+        } finally {
+          setIsLoadingPaytr(false);
+        }
+        return;
+      }
+
+      // Ziraat POS seçiliyse mevcut 3D Secure akışını kullan
       const cleanCard = cardNumber.replace(/\s+/g, '');
       if (cleanCard.length > 0 && cleanCard.length < 15) {
         setFormError('Lütfen geçerli bir 16 haneli kredi/banka kartı numarası girin.');
@@ -1404,21 +1474,71 @@ export const CheckoutModal: React.FC = () => {
             <button
               type="button"
               onClick={handleSubmitOrder}
-              className="flex items-center gap-2 px-7 py-3 bg-rose-700 hover:bg-rose-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer"
+              disabled={isLoadingPaytr}
+              className="flex items-center gap-2 px-7 py-3 bg-rose-700 hover:bg-rose-800 disabled:opacity-70 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all cursor-pointer"
             >
-              <Check className="w-4 h-4" />
-              <span>
-                {paymentMethod === 'credit_card'
-                  ? (paymentSettings.activeGateway === 'paytr' ? 'PayTR 3D Secure ile Öde' : 'Ziraat 3D Secure ile Öde')
-                  : 'Siparişi Onayla & Takibe Başla'}
-              </span>
+              {isLoadingPaytr ? (
+                <>
+                  <RotateCcw className="w-4 h-4 animate-spin" />
+                  <span>PayTR Bağlanıyor...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>
+                    {paymentMethod === 'credit_card'
+                      ? (paymentSettings.activeGateway === 'paytr' ? 'PayTR 3D Secure ile Öde' : 'Ziraat 3D Secure ile Öde')
+                      : 'Siparişi Onayla & Takibe Başla'}
+                  </span>
+                </>
+              )}
             </button>
           )}
         </div>
 
       </div>
 
-      {/* 3D SECURE VERIFICATION MODAL OVERLAY (FOR PAYTR & ZIRAAT BANKASI SANAL POS) */}
+      {/* ── PAYTR iFRAME ÖDEME EKRANI ─────────────────────────────────────────── */}
+      {paytrToken && (
+        <div className="fixed inset-0 z-70 bg-stone-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ height: 'min(680px, 90vh)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-900 text-white p-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Lock className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider">PayTR Güvenli Ödeme</div>
+                  <div className="text-[11px] opacity-80">3D Secure · SSL Şifreli · {grandTotal.toLocaleString('tr-TR')} ₺</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPaytrToken(null)}
+                className="text-white/70 hover:text-white p-1"
+                title="Ödemeyi İptal Et"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* PayTR iFrame */}
+            <iframe
+              src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
+              className="flex-1 w-full border-0"
+              title="PayTR Güvenli Ödeme"
+              allow="payment"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 3D SECURE VERIFICATION MODAL OVERLAY (FOR ZIRAAT BANKASI SANAL POS) */}
       {show3DSecureModal && (
         <div className="fixed inset-0 z-60 bg-stone-900/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
           <div 
