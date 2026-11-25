@@ -454,7 +454,7 @@ export const SEO_ARTICLES: Article[] = [
       'tebrik çiçeği notu',
       'kart mesajı'
     ],
-    image: 'https://images.pexels.com/photos/7985444/pexels-photo-7985444.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
     content: [
       'En güzel buketi tamamlayan unsur, içine eklenen içten bir kart notudur. Uzun paragraflar yerine doğrudan kalbe dokunan, 2-3 cümlelik samimi ifadeler çok daha akılda kalıcıdır.',
       'Sevgiliye gönderimde "Gözlerinin değdiği her yer çiçek açıyor, hayatımın en güzel baharısın" gibi kişisel bir cümle; anneye gönderimde "Varlığınla hayatımıza hep bahar getirdin, iyi ki varsın" mesajı sıcak bir gülümseme yaratır.',
