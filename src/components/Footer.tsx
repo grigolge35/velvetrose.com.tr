@@ -1,11 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { Phone, Mail, MapPin, Clock, Truck, ShieldCheck, Heart, MessageCircle, Instagram } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
+import { LegalPoliciesModal, LegalTab } from './LegalPoliciesModal';
 
 export const Footer: React.FC = () => {
   const { setActiveModal, setSelectedCategory, activeDistricts } = useShop();
   const [clickCount, setClickCount] = useState(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState<LegalTab>('mesafeli_satis');
+
+  const openLegalTab = (tab: LegalTab) => {
+    setLegalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   const handleDiscreetAdminTrigger = () => {
     setClickCount((prev) => {
@@ -246,6 +254,41 @@ export const Footer: React.FC = () => {
                   Çiçek Bakım Rehberi & İpuçları
                 </a>
               </li>
+              <li className="pt-2 border-t border-stone-800/80">
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider block mb-2">
+                  Sözleşme & Politikalar
+                </span>
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openLegalTab('mesafeli_satis')}
+                    className="block text-left text-stone-300 hover:text-rose-300 transition-colors cursor-pointer"
+                  >
+                    Mesafeli Satış Sözleşmesi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openLegalTab('iptal_iade')}
+                    className="block text-left text-stone-300 hover:text-rose-300 transition-colors cursor-pointer"
+                  >
+                    İptal ve İade Politikası
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openLegalTab('teslimat')}
+                    className="block text-left text-stone-300 hover:text-rose-300 transition-colors cursor-pointer"
+                  >
+                    Teslimat Bilgileri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openLegalTab('gizlilik')}
+                    className="block text-left text-stone-300 hover:text-rose-300 transition-colors cursor-pointer"
+                  >
+                    Gizlilik Politikası & KVKK
+                  </button>
+                </div>
+              </li>
               <li className="pt-2 text-[11px] text-stone-500">
                 %100 Taze Kesim Çiçek & Güvenli Teslimat Garantisi
               </li>
@@ -306,16 +349,25 @@ export const Footer: React.FC = () => {
             </a>
           </div>
 
-          <div className="flex items-center gap-2 justify-center md:justify-end">
+          <div className="flex items-center gap-2 justify-center md:justify-end flex-wrap">
+            <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              PayTR 256-Bit SSL Güvenli Ödeme
+            </span>
+            <span aria-hidden="true">·</span>
             <span>İzmir / Türkiye</span>
             <span aria-hidden="true">·</span>
             <span>velvetrose.com.tr</span>
-            <span aria-hidden="true">·</span>
-            <span>Bornova Atölyesi</span>
           </div>
         </div>
 
       </div>
+
+      <LegalPoliciesModal
+        isOpen={legalModalOpen}
+        initialTab={legalTab}
+        onClose={() => setLegalModalOpen(false)}
+      />
     </footer>
   );
 };

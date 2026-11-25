@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { X, MapPin, Calendar, Clock, Heart, CreditCard, ShieldCheck, Check, ArrowRight, Truck, PenLine, Sparkles, Mail, Eye, RotateCcw, Copy, CheckCheck, Smartphone, Lock, AlertCircle, Building2, Search, ChevronDown, ChevronUp, CheckCircle2, List } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { IZMIR_DISTRICTS, DELIVERY_TIME_SLOTS, CARD_NOTE_PRESETS, getStreetsForDistrictAndNeighborhood } from '../data/izmirDistricts';
+import { LegalPoliciesModal, LegalTab } from './LegalPoliciesModal';
 
 export const CheckoutModal: React.FC = () => {
   const { activeModal, setActiveModal, cart, cartTotal, placeOrder, paymentSettings, activeDistricts } = useShop();
@@ -110,6 +111,14 @@ export const CheckoutModal: React.FC = () => {
   // Step wizard
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [formError, setFormError] = useState('');
+  const [acceptedPolicies, setAcceptedPolicies] = useState<boolean>(false);
+  const [legalModalOpen, setLegalModalOpen] = useState<boolean>(false);
+  const [legalTab, setLegalTab] = useState<LegalTab>('mesafeli_satis');
+
+  const openLegal = (tab: LegalTab) => {
+    setLegalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   if (activeModal !== 'checkout') {
     return null;
@@ -216,6 +225,11 @@ export const CheckoutModal: React.FC = () => {
 
     if (cart.length === 0) {
       setFormError('Sepetinizde ürün bulunmuyor.');
+      return;
+    }
+
+    if (!acceptedPolicies) {
+      setFormError('Lütfen devam etmek için Mesafeli Satış Sözleşmesi ile İptal ve İade Politikasını onaylayınız.');
       return;
     }
 
@@ -1442,6 +1456,45 @@ export const CheckoutModal: React.FC = () => {
                 </div>
               </div>
 
+              {/* Mesafeli Satış Sözleşmesi & İptal-İade Politikası Onayı */}
+              <label className="flex items-start gap-2.5 p-3.5 bg-stone-50 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-100/70 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={acceptedPolicies}
+                  onChange={(e) => {
+                    setAcceptedPolicies(e.target.checked);
+                    if (e.target.checked && formError) setFormError('');
+                  }}
+                  className="mt-0.5 w-4 h-4 rounded border-stone-300 text-rose-700 focus:ring-rose-600 cursor-pointer shrink-0"
+                />
+                <span className="text-[11px] sm:text-xs text-stone-700 leading-relaxed">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); openLegal('mesafeli_satis'); }}
+                    className="font-semibold text-rose-700 underline hover:text-rose-800 cursor-pointer"
+                  >
+                    Mesafeli Satış Sözleşmesi
+                  </button>
+                  ,{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); openLegal('iptal_iade'); }}
+                    className="font-semibold text-rose-700 underline hover:text-rose-800 cursor-pointer"
+                  >
+                    İptal ve İade Politikası
+                  </button>
+                  {' '}ve{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); openLegal('teslimat'); }}
+                    className="font-semibold text-rose-700 underline hover:text-rose-800 cursor-pointer"
+                  >
+                    Teslimat Bilgileri
+                  </button>
+                  ’ni okudum, anladım ve kabul ediyorum.
+                </span>
+              </label>
+
             </div>
           )}
 
@@ -1694,6 +1747,11 @@ export const CheckoutModal: React.FC = () => {
           </div>
         </div>
       )}
+      <LegalPoliciesModal
+        isOpen={legalModalOpen}
+        initialTab={legalTab}
+        onClose={() => setLegalModalOpen(false)}
+      />
     </div>
   );
 };
