@@ -79,6 +79,7 @@ interface ShopContextType {
   placeOrder: (orderData: Omit<Order, 'id' | 'createdAt' | 'status' | 'statusHistory'>) => Order;
   trackOrder: (query: string) => Order | null;
   updateOrderStatus: (orderId: string, newStatus: OrderStatus) => void;
+  deleteOrder: (orderId: string) => void;
 
   // Payment Infrastructure
   paymentSettings: PaymentSettings;
@@ -736,6 +737,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Delete order (Florist Admin action)
+  const deleteOrder = (orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    if (activeTrackingOrder?.id === orderId) {
+      setActiveTrackingOrder(null);
+    }
+  };
+
   // CRUD for Products — her işlem hem UI state'i hem Firestore'u günceller
   const addProduct = (product: FlowerProduct) => {
     const clean = cleanForFirestore(product);
@@ -889,6 +898,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         placeOrder,
         trackOrder,
         updateOrderStatus,
+        deleteOrder,
         paymentSettings,
         updatePaymentSettings,
         setActiveGateway,

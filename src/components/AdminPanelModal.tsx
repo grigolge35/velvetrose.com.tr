@@ -55,6 +55,7 @@ export const AdminPanelModal: React.FC = () => {
     updateExtraGift,
     deleteExtraGift,
     updateOrderStatus,
+    deleteOrder,
     paymentSettings,
     updatePaymentSettings,
     setActiveGateway,
@@ -884,6 +885,21 @@ const [newProductIsFeatured, setNewProductIsFeatured] = useState(false);
                         >
                           <Printer className="w-3.5 h-3.5" />
                           <span>Kartı Yazdır</span>
+                        </button>
+
+                        {/* Delete Order Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`#${order.id} numaralı siparişi silmek istediğinize emin misiniz?`)) {
+                              deleteOrder(order.id);
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                          title="Siparişi Sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Sil</span>
                         </button>
 
                         {/* Toggle Expand/Collapse */}
