@@ -342,7 +342,7 @@ export const Footer: React.FC = () => {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 group transition-all hover:scale-105"
             >
-              <span className="text-stone-400 group-hover:text-stone-300">Site Tasarımı:</span>
+              <span className="text-stone-400 group-hover:text-stone-300">Tasarım & Yazılım:</span>
               <span className="font-extrabold tracking-wide bg-gradient-to-r from-pink-500 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent group-hover:brightness-125">
                 DEVSTUDIO YAZILIM
               </span>
