@@ -21,7 +21,31 @@ import { ArticleModal } from './components/ArticleModal';
 import { WhatsAppFloatingButton } from './components/WhatsAppFloatingButton';
 
 function AppContent() {
-  const { setActiveModal } = useShop();
+  const { setActiveModal, placeOrder } = useShop();
+
+  useEffect(() => {
+    // PayTR ödeme dönüşü kontrolü (?payment=success veya ?payment=failed)
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    if (paymentStatus === 'success') {
+      try {
+        const raw = localStorage.getItem('velvet_pending_paytr_order');
+        if (raw) {
+          const pending = JSON.parse(raw);
+          if (pending?.orderData) {
+            placeOrder(pending.orderData);
+          }
+          localStorage.removeItem('velvet_pending_paytr_order');
+        }
+      } catch (err) {
+        console.error('PayTR sipariş tamamlama hatası:', err);
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'failed') {
+      alert('Kart ödemesi tamamlanamadı veya banka tarafından onaylanmadı. Lütfen tekrar deneyiniz.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [placeOrder]);
 
   useEffect(() => {
     // Secret keyboard shortcut: Ctrl + Shift + A or Alt + A
