@@ -6,6 +6,7 @@
 import React, { useEffect } from 'react';
 import { ShopProvider, useShop } from './context/ShopContext';
 import { Navbar } from './components/Navbar';
+import { CategoryStoriesBar } from './components/CategoryStoriesBar';
 import { ProductGrid } from './components/ProductGrid';
 import { ExtraGiftsShowcase } from './components/ExtraGiftsShowcase';
 import { SeoArticlesSection } from './components/SeoArticlesSection';
@@ -89,6 +90,7 @@ function AppContent() {
 
       {/* Main Content Sections */}
       <main className="flex-1">
+        <CategoryStoriesBar />
         <ProductGrid />
         <ExtraGiftsShowcase />
         <SeoArticlesSection />
