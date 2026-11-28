@@ -31,8 +31,10 @@ export const ProductGrid: React.FC = () => {
     setShowFavoritesOnly
   } = useShop();
 
-  // Filter States
-  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(true);
+  // Filter States (Mobilde ilk açılışta kapalı, masaüstünde açık)
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : false
+  );
   const [priceRange, setPriceRange] = useState<'all' | 'under1000' | '1000to1500' | 'above1500' | 'custom'>('all');
   const [customMinPrice, setCustomMinPrice] = useState<string>('');
   const [customMaxPrice, setCustomMaxPrice] = useState<string>('');
@@ -213,8 +215,8 @@ export const ProductGrid: React.FC = () => {
   };
 
   return (
-    <section id="koleksiyon" className="py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="koleksiyon" className="pt-6 pb-12 sm:py-10 bg-white">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
@@ -619,9 +621,9 @@ export const ProductGrid: React.FC = () => {
           )}
         </div>
 
-        {/* 3-Column Desktop / 2-Column Tablet Grid with generous whitespace (gap-6 to gap-8) */}
+        {/* 3-Column Desktop / 2-Column Mobile & Tablet Grid */}
         {sortedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
             {sortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
