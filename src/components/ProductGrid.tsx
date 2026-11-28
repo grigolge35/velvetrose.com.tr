@@ -232,18 +232,19 @@ export const ProductGrid: React.FC = () => {
           </div>
 
           {/* Quick Search & Filter Toggle Header */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 min-w-[140px] sm:flex-initial">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Gül, orkide, buket ara..."
-                className="w-48 sm:w-64 text-xs bg-stone-50 border border-stone-200 rounded-xl pl-8 pr-3 py-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-600 focus:bg-white"
+                className="w-full sm:w-64 text-xs bg-stone-50 border border-stone-200 rounded-xl pl-8 pr-7 py-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-600 focus:bg-white"
               />
               <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               {searchQuery && (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
                 >
@@ -254,6 +255,7 @@ export const ProductGrid: React.FC = () => {
 
             {/* Quick Favorites Toggle Button */}
             <button
+              type="button"
               onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
               className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
                 showFavoritesOnly
@@ -275,7 +277,8 @@ export const ProductGrid: React.FC = () => {
 
             {/* Toggle Filter Menu Button */}
             <button
-              onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+              type="button"
+              onClick={() => setIsFilterMenuOpen((prev) => !prev)}
               className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
                 isFilterMenuOpen
                   ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
@@ -291,34 +294,6 @@ export const ProductGrid: React.FC = () => {
               )}
             </button>
           </div>
-        </div>
-
-        {/* Çok Satan Ürünler Slider (Seçilen & Öne Çıkarılan Tasarımlar) */}
-        <BestSellersSlider />
-
-        {/* Hızlı Gönderim Amacı & Kategori Çubuğu (Doğum Günü, Evlilik Yıldönümü, vb.) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-thin">
-          {categoryFilters.map((cat) => {
-            const isActive = selectedCategory === cat.id;
-            const isCampaign = cat.id === 'kampanya';
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-2xs ${
-                  isActive
-                    ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
-                    : isCampaign
-                    ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-200'
-                    : 'bg-white hover:bg-stone-50 text-stone-700 border-stone-200 hover:border-stone-300'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
         </div>
 
         {/* COMPREHENSIVE FILTERING MENU (Kategori, Fiyat Aralığı, Popülerlik) */}
@@ -597,6 +572,34 @@ export const ProductGrid: React.FC = () => {
 
           </div>
         )}
+
+        {/* Çok Satan Ürünler Slider (Seçilen & Öne Çıkarılan Tasarımlar) */}
+        <BestSellersSlider />
+
+        {/* Hızlı Gönderim Amacı & Kategori Çubuğu (Doğum Günü, Evlilik Yıldönümü, vb.) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-thin">
+          {categoryFilters.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            const isCampaign = cat.id === 'kampanya';
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-2xs ${
+                  isActive
+                    ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
+                    : isCampaign
+                    ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-200'
+                    : 'bg-white hover:bg-stone-50 text-stone-700 border-stone-200 hover:border-stone-300'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Product Count indicator */}
         <div className="flex items-center justify-between text-xs text-stone-500 mb-6">

@@ -19,6 +19,7 @@ import { AdminPanelModal } from './components/AdminPanelModal';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { ArticleModal } from './components/ArticleModal';
 import { WhatsAppFloatingButton } from './components/WhatsAppFloatingButton';
+import { ScrollNavButtons } from './components/ScrollNavButtons';
 
 function AppContent() {
   const { setActiveModal, placeOrder } = useShop();
@@ -101,6 +102,9 @@ function AppContent() {
 
       {/* Floating WhatsApp Quick Support Widget */}
       <WhatsAppFloatingButton />
+
+      {/* Floating Scroll Up / Down Navigation Arrows */}
+      <ScrollNavButtons />
 
       {/* All Interactive Modals & Drawers */}
       <ExtraGiftModal />

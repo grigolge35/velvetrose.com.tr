@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Truck, Search, X, MessageCircle, Heart } from 'lucide-react';
+import { ShoppingBag, Truck, Search, X, MessageCircle, Heart, Menu } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
 export const Navbar: React.FC = () => {
@@ -15,6 +15,7 @@ export const Navbar: React.FC = () => {
   } = useShop();
   const [showPromo, setShowPromo] = useState(true);
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
@@ -164,7 +165,7 @@ export const Navbar: React.FC = () => {
             {/* Shopping Bag CTA */}
             <button
               onClick={() => setActiveModal('cart_drawer')}
-              className="relative flex items-center gap-2 px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              className="relative flex items-center gap-2 px-3 sm:px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap cursor-pointer"
             >
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Sepetim</span>
@@ -174,10 +175,104 @@ export const Navbar: React.FC = () => {
                 </span>
               )}
             </button>
+
+            {/* Mobile Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="lg:hidden p-2 text-stone-800 hover:text-rose-700 bg-stone-100 hover:bg-rose-50 rounded-lg border border-stone-200 transition-colors cursor-pointer"
+              aria-label={mobileMenuOpen ? 'Menüyü Kapat' : 'Menüyü Aç'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
 
         </div>
       </div>
+
+      {/* Mobile Dropdown Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-stone-200 bg-white px-4 py-4 space-y-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Mobile Search */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Gül, orkide, buket ara..."
+              className="w-full text-xs bg-stone-50 border border-stone-200 rounded-xl pl-9 pr-8 py-2.5 text-stone-800 focus:outline-none focus:ring-2 focus:ring-rose-600 focus:bg-white"
+            />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <nav className="flex flex-col space-y-1 text-sm font-medium text-stone-800">
+            <a
+              href="#koleksiyon"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-700 transition-colors"
+            >
+              Tüm Ürünler
+            </a>
+            <a
+              href="#ekstra-hediyeler"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-700 transition-colors"
+            >
+              Ekstra Hediyeler
+            </a>
+            <a
+              href="#izmir-teslimat"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-between"
+            >
+              <span>İzmir Teslimat Bölgeleri</span>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {activeDistricts.length} Bölge
+              </span>
+            </a>
+            <a
+              href="#cicek-rehberi"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-700 transition-colors"
+            >
+              Çiçek Bakım Rehberi
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setActiveModal('order_tracking');
+              }}
+              className="px-3 py-2.5 rounded-xl hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center gap-2 text-left cursor-pointer"
+            >
+              <Truck className="w-4 h-4 text-rose-600" />
+              <span>Sipariş Takibi</span>
+            </button>
+          </nav>
+
+          <div className="pt-2 border-t border-stone-100">
+            <a
+              href="https://wa.me/905325138658?text=Merhaba%2C%20Velvet%20Rose%20%C3%A7i%C3%A7ek%20sipari%C5%9Fi%20veya%20sorum%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+              target="_blank"
+              rel="noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 fill-white text-[#25D366]" />
+              <span>WhatsApp Destek: 0532 513 86 58</span>
+            </a>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
